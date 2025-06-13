@@ -1,0 +1,176 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+// User model
+model NguoiDung {
+  id            String           @id @default(uuid())
+  tenDangNhap   String           @unique
+  matKhau       String
+  vaiTro        String           @default("USER")
+  nickname      String?
+  fullName      String?
+  ngayTao       DateTime         @default(now())
+  
+  // Relations
+  gioHang       GioHang[]
+  donHang       DonHang[]
+  diaChiNhanHang DiaChiNhanHang[]
+  chiTietHuyDonHang ChiTietHuyDonHang[]
+  
+
+  @@map("NguoiDung")
+}
+
+// Role values: "admin", "user"
+
+// Category model
+model DanhMuc {
+  id          String   @id @default(uuid())
+  tenDanhMuc  String   @unique
+  moTa        String?  @db.Text
+  ngayTao     DateTime @default(now())
+  
+  // Relations
+  truyen      Truyen[]
+
+  @@map("DanhMuc")
+}
+
+// Comic model
+model Truyen {
+  id            String         @id @default(uuid())
+  tenTruyen     String
+  hinhAnh       String
+  moTa          String?        @db.Text
+  theLoai       String
+  soTapHienTai  Int            @default(0)
+  tacGia        String
+  ngayTao       DateTime       @default(now())
+  
+  // Relations
+  danhMuc       DanhMuc        @relation(fields: [maDanhMuc], references: [id])
+  maDanhMuc     String
+  chiTietTruyen ChiTietTruyen[]
+
+  @@map("Truyen")
+}
+
+// Comic detail model
+model ChiTietTruyen {
+  id            String     @id @default(uuid())
+  tenTapTruyen  String
+  hinhAnh       String
+  giaBan        Float
+  soTrang       Int
+  soLuongTon    Int        @default(0)
+  soLuongDaBan  Int        @default(0)
+  
+  // Relations
+  truyen        Truyen     @relation(fields: [maTruyen], references: [id])
+  maTruyen      String
+  gioHang       GioHang[]
+  donHang       DonHang[]
+
+  @@map("ChiTietTruyen")
+}
+
+// Cart model
+model GioHang {
+  id                String          @id @default(uuid())
+  soLuong           Int             @default(1)
+  
+  // Relations
+  nguoiDung         NguoiDung       @relation(fields: [userId], references: [id])
+  userId            String
+  chiTietTruyen     ChiTietTruyen   @relation(fields: [maChiTietTruyen], references: [id])
+  maChiTietTruyen   String
+
+  @@map("GioHang")
+}
+
+// Discount code model
+model MaGiamGia {
+  id            String        @id @default(uuid())
+  moTa          String?       @db.Text
+  loaiGiamGia   String        // "TIENMAT" or "PHANTRAM"
+  soTienGiam    Float
+  soLuongDung   Int           @default(0)
+  soLuotDung    Int           @default(0)
+  ngayTao       DateTime      @default(now())
+  ngayKetThuc   DateTime
+  
+  // Relations
+  donHang       DonHang[]
+
+  @@map("MaGiamGia")
+}
+
+// DISCOUNT values: "TIENMAT", "PHANTRAM"
+
+// Order model
+model DonHang {
+  id                String            @id @default(uuid())
+  soLuong           Int
+  tongTien          Float
+  trangThai         String            @default("PENDING")
+  ngayTao           DateTime          @default(now())
+  phuongThucThanhToan String          
+  
+  // Relations
+  nguoiDung         NguoiDung         @relation(fields: [userId], references: [id])
+  userId            String
+  chiTietTruyen     ChiTietTruyen     @relation(fields: [maChiTietTruyen], references: [id])
+  maChiTietTruyen   String
+  maGiamGia         MaGiamGia?        @relation(fields: [maGiamGiaId], references: [id])
+  maGiamGiaId       String?
+  diaChiNhanHang    DiaChiNhanHang     @relation(fields: [maDiaChi], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  maDiaChi          String           
+  
+  // Relations
+  chiTietHuyDonHangs ChiTietHuyDonHang[]
+
+  @@map("DonHang")
+}
+
+// OrderStatus values: "PENDING", "SHIPPING", "SUCCESS", "BACKPENDING", "BACK"
+
+model ChiTietHuyDonHang {
+  id                String          @id @default(uuid())
+  isAccept          Int             @default(0)
+  reasonBack        String      
+  createdAt         DateTime        @default(now())    
+  replyContent      String?
+  replyAt           DateTime?   
+
+  //Relations
+  donHang           DonHang         @relation(fields: [maDonHang], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  maDonHang         String
+  nguoiDUng         NguoiDung       @relation(fields: [userId], references: [id])
+  userId            String     
+
+  @@map("ChiTietHuyDonHang")   
+}
+
+// Shipping address model
+model DiaChiNhanHang {
+  id            String      @id @default(uuid())
+  diaChi        String
+  tenNguoiNhan  String
+  soDienThoai   String
+  
+  // Relations
+  nguoiDung     NguoiDung   @relation(fields: [userId], references: [id])
+  userId        String
+  donHang       DonHang[]
+
+  @@map("DiaChiNhanHang")
+}
